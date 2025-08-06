@@ -1,24 +1,22 @@
-const fetch = require('node-fetch');
-
-const OPENWEATHER_API_KEY = process.env.OPENWEATHER_API_KEY;
-
-exports.getWeatherByLocation = async (location) => {
-  // Location can be city/village/district name; for production, use lat/lon coordinates
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&units=metric&appid=${OPENWEATHER_API_KEY}`;
+exports.get5DayForecastByLocation = async (location) => {
+  const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(location)}&units=metric&appid=${OPENWEATHER_API_KEY}`;
 
   try {
     const res = await fetch(url);
-    if(!res.ok) throw new Error('Failed to fetch weather');
+    if (!res.ok) throw new Error('Failed to fetch 5-day forecast');
     const data = await res.json();
-    // Extract relevant data
-    return {
-      temp: data.main.temp,
-      description: data.weather[0].description,
-      humidity: data.main.humidity,
-      windSpeed: data.wind.speed,
-      icon: data.weather[0].icon,
-      city: data.name
-    };
+
+    // Extract a simplified forecast: one entry per day (e.g., noon data)
+    const dailyForecasts = data.list.filter(item => item.dt_txt.includes('12:00:00')).map(item => ({
+      date: item.dt_txt.split(' ')[0],
+      temp: item.main.temp,
+      description: item.weather[0].description,
+      icon: item.weather[0].icon,
+      humidity: item.main.humidity,
+      windSpeed: item.wind.speed
+    }));
+
+    return dailyForecasts;
   } catch (error) {
     throw error;
   }
